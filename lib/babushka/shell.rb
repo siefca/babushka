@@ -112,8 +112,8 @@ module Babushka
     # Return true iff reading from this IO object would return data
     # immediately, and not block while waiting for data.
     def data_waiting? io
-      result = IO.select([self], [], [], 0)
-      result && (result.first.first == self)
+      ios, _, _ = IO.select([io], [], [], 0)
+      ios == [io]
     end
   end
 end
