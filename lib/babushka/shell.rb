@@ -57,13 +57,6 @@ module Babushka
         spinner_offset = -1
         should_spin = @opts[:spinner] && !Base.task.opt(:debug)
 
-        # For very short-running commands, check for output in a tight loop.
-        # The sleep below would at least halve the speed of quick #shell calls.
-        # This means really quick calls (e.g. `whoami`, `pwd`, etc) aren't
-        # delayed, but the CPU is only pegged for a fraction of a second on
-        # slower calls (e.g. `gem env`, `make`, etc).
-        1_000.times { break if stdout.ready_for_read? || stderr.ready_for_read? }
-
         loop {
           read_from stderr, @stderr, :stderr
           read_from stdout, @stdout do
@@ -72,10 +65,6 @@ module Babushka
 
           if stdout.closed? && stderr.closed?
             break
-          else
-            # We sleep here because otherwise babushka itself would peg the CPU
-            # while waiting for output from long-running shell commands.
-            sleep 0.05
           end
         }
       end
@@ -112,7 +101,7 @@ module Babushka
     # Return true iff reading from this IO object would return data
     # immediately, and not block while waiting for data.
     def data_waiting? io
-      ios, _, _ = IO.select([io], [], [], 0)
+      ios, _, _ = IO.select([io], [], [], 0.05)
       ios == [io]
     end
   end
