@@ -82,7 +82,7 @@ module Babushka
     end
 
     def read_from io, buf, log_as = nil
-      while !io.closed? && io.ready_for_read?
+      while !io.closed? && data_waiting?(io)
         output = nil
         # Try reading less than a full line (up to just a backspace) if we're
         # looking for progress output.
@@ -107,6 +107,13 @@ module Babushka
         opts[:chdir] = @opts[:cd].p.to_s if @opts[:cd]
         opts[:env] = @env if @env
       }
+    end
+
+    # Return true iff reading from this IO object would return data
+    # immediately, and not block while waiting for data.
+    def data_waiting? io
+      result = IO.select([self], [], [], 0)
+      result && (result.first.first == self)
     end
   end
 end
